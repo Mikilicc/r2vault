@@ -106,7 +106,10 @@ export default function FilesBrowser() {
     };
   }, [router]);
 
-  async function getFileUrl(key: string, purpose: "copy" | "download") {
+  async function getFileUrl(
+    key: string,
+    purpose: "copy" | "download" | "permanent",
+  ) {
     const response = await fetch(
       `/api/download?key=${encodeURIComponent(key)}&purpose=${purpose}`,
       { cache: "no-store" },
@@ -121,15 +124,20 @@ export default function FilesBrowser() {
     return result.url;
   }
 
-  async function copyFileLink(file: StoredFile) {
+  async function copyFileLink(
+    file: StoredFile,
+    purpose: "copy" | "permanent",
+  ) {
     setError("");
     setCopyNotice("");
     try {
-      const url = await getFileUrl(file.key, "copy");
+      const url = await getFileUrl(file.key, purpose);
       if (!url) return;
       await navigator.clipboard.writeText(url);
       setCopyNotice(
-        `Link za „${file.name}” je kopiran. Važi 15 minuta; svako ko ga ima može preuzeti fajl.`,
+        purpose === "permanent"
+          ? `Stalni javni link za „${file.name}” je kopiran.`
+          : `Privremeni link za „${file.name}” je kopiran. Važi 15 minuta.`,
       );
     } catch (copyError) {
       setError(
@@ -206,8 +214,8 @@ export default function FilesBrowser() {
           <div className="link-expiry-note">
             <LockIcon />
             <span>
-              Kopirani link traje 15 minuta. Svako ko dobije link može preuzeti
-              fajl dok ne istekne.
+              Stalni linkovi koriste javni R2 custom domain; privremeni linkovi
+              ističu posle 15 minuta. Svako ko ima link može preuzeti fajl.
             </span>
           </div>
           {copyNotice && (
@@ -263,12 +271,22 @@ export default function FilesBrowser() {
                   </span>
                   <div className="file-actions">
                     <button
-                      aria-label={`Kopiraj link za ${file.name}`}
-                      className="icon-button"
-                      onClick={() => void copyFileLink(file)}
+                      aria-label={`Kopiraj stalni javni link za ${file.name}`}
+                      className="link-copy-button"
+                      onClick={() => void copyFileLink(file, "permanent")}
+                      title="Stalni, javno dostupan link"
                       type="button"
                     >
-                      <CopyIcon />
+                      Stalni
+                    </button>
+                    <button
+                      aria-label={`Kopiraj privremeni link za ${file.name} koji važi 15 minuta`}
+                      className="link-copy-button"
+                      onClick={() => void copyFileLink(file, "copy")}
+                      title="Privremeni link koji važi 15 minuta"
+                      type="button"
+                    >
+                      15 min
                     </button>
                     <button
                       aria-label={`Preuzmi ${file.name}`}
@@ -363,14 +381,6 @@ function ArrowIcon() {
   return (
     <svg aria-hidden="true" fill="none" viewBox="0 0 18 18">
       <path d="M3.5 9h11m-4.5-4.5L14.5 9 10 13.5" />
-    </svg>
-  );
-}
-function CopyIcon() {
-  return (
-    <svg aria-hidden="true" fill="none" viewBox="0 0 20 20">
-      <rect height="11" rx="2" width="9" x="7.5" y="6.5" />
-      <path d="M12.5 3.5h-7a2 2 0 0 0-2 2v9" />
     </svg>
   );
 }

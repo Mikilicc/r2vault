@@ -8,6 +8,26 @@ export function getBucketName() {
   return bucket;
 }
 
+export function getPublicObjectUrl(key: string) {
+  const baseUrl = process.env.R2_PUBLIC_BASE_URL;
+  if (!baseUrl) throw new Error("R2_PUBLIC_BASE_URL is not configured.");
+
+  const parsedUrl = new URL(baseUrl);
+  if (
+    parsedUrl.protocol !== "https:" ||
+    parsedUrl.username ||
+    parsedUrl.password ||
+    parsedUrl.pathname !== "/" ||
+    parsedUrl.search ||
+    parsedUrl.hash
+  ) {
+    throw new Error("R2_PUBLIC_BASE_URL must be an HTTPS origin.");
+  }
+
+  const encodedKey = key.split("/").map(encodeURIComponent).join("/");
+  return `${parsedUrl.origin}/${encodedKey}`;
+}
+
 export function getR2Client() {
   if (client) return client;
 

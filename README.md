@@ -12,6 +12,7 @@ upload ili download.
    - `ADMIN_PASSWORD`: jedinstvena lozinka od najmanje 12 karaktera.
    - `SESSION_SECRET`: nasumičan tajni string od najmanje 32 bajta.
    - `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY` i `R2_BUCKET_NAME`.
+   - `R2_PUBLIC_BASE_URL`: HTTPS custom domain za R2, npr. `https://media.mikilic.com`.
 4. Instaliraj pakete i pokreni aplikaciju:
 
    ```sh
@@ -32,6 +33,11 @@ U produkciji se session cookie šalje samo preko HTTPS-a.
 
 - Napravi **private** bucket i R2 API token sa samo potrebnim pravima za taj bucket:
   `Object Read` i `Object Write`. Ne koristi account-wide token.
+- Poveži `R2_PUBLIC_BASE_URL` kao custom domain za bucket u Cloudflare R2.
+  Custom domain omogućava javno preuzimanje objekata preko tog domena, pa
+  stalni linkovi rade bez prijave i isteka: svako ko zna link može preuzeti
+  fajl dok je objekat dostupan. Privremeni linkovi ostaju potpisani R2 URL-ovi
+  koji ističu posle 15 minuta.
 - Dodaj bucket CORS policy za tačan sajt origin, npr.:
 
   ```json

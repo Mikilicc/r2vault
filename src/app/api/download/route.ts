@@ -2,7 +2,12 @@ import { GetObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { NextResponse } from "next/server";
 import { hasValidSession } from "@/lib/auth";
-import { getBucketName, getR2Client, sanitizeFileName } from "@/lib/r2";
+import {
+  getBucketName,
+  getPublicObjectUrl,
+  getR2Client,
+  sanitizeFileName,
+} from "@/lib/r2";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -18,9 +23,22 @@ export async function GET(request: Request) {
     !key ||
     key.length > 1024 ||
     key.split("/").some((part) => part === "." || part === "..") ||
-    (purpose !== "download" && purpose !== "copy")
+    (purpose !== "download" && purpose !== "copy" && purpose !== "permanent")
   ) {
     return NextResponse.json({ error: "Nevažeći fajl." }, { status: 400 });
+  }
+
+  if (purpose === "permanent") {
+    try {
+      const url = getPublicObjectUrl(key);
+      return NextResponse.json({ url }, { headers: { "Cache-Control": "no-store" } });
+    } catch (error) {
+      console.error("Could not create a permanent R2 URL:", error);
+      return NextResponse.json(
+        { error: "Nije moguće napraviti stalni link. Proveri R2_PUBLIC_BASE_URL." },
+        { status: 503 },
+      );
+    }
   }
 
   const fileName = sanitizeFileName(key.split("/").pop() ?? "fajl").replace(/^[0-9a-f-]{36}-/, "");
